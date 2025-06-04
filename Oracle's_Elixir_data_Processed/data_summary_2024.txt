@@ -1,0 +1,33 @@
+資料筆數: 117648, 欄位數: 161
+
+重要欄位:
+- gameid
+- datacompleteness
+- url
+- league
+- year
+- split
+- playoffs
+- date
+- game
+- patch
+- participantid
+- side
+- position
+- playername
+- playerid
+- teamname
+- teamid
+- champion
+- ban1
+- ban2
+- ban3
+- ban4
+- ban5
+- pick1
+- pick2
+- pick3
+- pick4
+- pick5
+- gamelength
+- result
