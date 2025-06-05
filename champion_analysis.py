@@ -5,6 +5,7 @@ import seaborn as sns
 import os
 from matplotlib.font_manager import FontProperties
 import matplotlib as mpl
+from lol_champion_zh_tw import translate_champion
 
 # 設定中文字型 (根據您的環境調整)
 plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'Arial Unicode MS', 'SimHei']
@@ -34,18 +35,19 @@ def analyze_champion_pickrate(df, top_n=20, save_fig=True):
     pick_rates.columns = ['champion', 'pick_rate']
     
     # 取前N個使用率最高的英雄
-    top_champions = pick_rates.head(top_n)
+    top_champions = pick_rates.head(top_n).copy()
+    top_champions['champion_zh'] = top_champions['champion'].apply(translate_champion)
     
     # 視覺化
     plt.figure(figsize=(12, 8))
-    sns.barplot(x='pick_rate', y='champion', data=top_champions, palette='viridis')
+    sns.barplot(x='pick_rate', y='champion_zh', data=top_champions, palette='viridis')
     plt.title(f'英雄聯盟職業賽選用率前{top_n}名英雄', fontsize=16)
     plt.xlabel('選用率 (%)', fontsize=12)
     plt.ylabel('英雄名稱', fontsize=12)
     plt.tight_layout()
     
     if save_fig:
-        output_path = "data/analysis/figures/champion_pick_rate.png"
+        output_path = "Oracle's_Elixir_data_Processed/figures/champion_pick_rate.png"
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         print(f"圖表已儲存至 {output_path}")
@@ -70,6 +72,7 @@ def analyze_champion_by_position(df, save_fig=True):
     top_by_position = position_champions.groupby('position').apply(
         lambda x: x.nlargest(5, 'count')
     ).reset_index(drop=True)
+    top_by_position['champion_zh'] = top_by_position['champion'].apply(translate_champion)
     
     # 計算每個位置的總出場次數
     position_totals = df.groupby('position').size()
@@ -91,7 +94,7 @@ def analyze_champion_by_position(df, save_fig=True):
         position_data = position_data.sort_values('count', ascending=True)
         
         ax = axes[i] if n_positions > 1 else axes
-        sns.barplot(x='count', y='champion', data=position_data, palette='viridis', ax=ax)
+        sns.barplot(x='count', y='champion_zh', data=position_data, palette='viridis', ax=ax)
         ax.set_title(f'{position} 位置', fontsize=14)
         ax.set_xlabel('出場次數', fontsize=12)
         
@@ -103,7 +106,7 @@ def analyze_champion_by_position(df, save_fig=True):
     plt.tight_layout()
     
     if save_fig:
-        output_path = "data/analysis/figures/champion_by_position.png"
+        output_path = "Oracle's_Elixir_data_Processed/figures/champion_by_position.png"
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         print(f"圖表已儲存至 {output_path}")
@@ -136,17 +139,18 @@ def analyze_champion_winrate(df, min_games=10, save_fig=True):
     
     # 篩選出出場次數足夠的英雄
     champion_stats = champion_stats[champion_stats['games'] >= min_games]
+    champion_stats['champion_zh'] = champion_stats['champion'].apply(translate_champion)
     
     # 視覺化
     plt.figure(figsize=(12, 8))
     scatter = plt.scatter(
-        x='pick_rate', 
-        y='winrate', 
-        data=champion_stats,
+        champion_stats['pick_rate'],
+        champion_stats['winrate'],
         s=champion_stats['games'] / 2,  # 點的大小代表出場次數
         alpha=0.6,
         c=champion_stats['games'],
-        cmap='viridis'
+        cmap='viridis',
+        label=champion_stats['champion_zh']
     )
     
     plt.axhline(y=50, color='r', linestyle='--', alpha=0.3)  # 50%勝率參考線
@@ -157,7 +161,7 @@ def analyze_champion_winrate(df, min_games=10, save_fig=True):
     
     for _, row in pd.concat([top_pick_rate, top_winrate]).drop_duplicates().iterrows():
         plt.annotate(
-            row['champion'],
+            row['champion_zh'],
             xy=(row['pick_rate'], row['winrate']),
             xytext=(5, 5),
             textcoords='offset points',
@@ -172,8 +176,7 @@ def analyze_champion_winrate(df, min_games=10, save_fig=True):
     plt.tight_layout()
     
     if save_fig:
-        # 以及修改所有儲存圖表和數據的路徑
-        output_path = "Oracle's_Elixir_data_Processed/figures/champion_pick_rate.png"
+        output_path = "Oracle's_Elixir_data_Processed/figures/champion_winrate_vs_pickrate.png"
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         print(f"圖表已儲存至 {output_path}")

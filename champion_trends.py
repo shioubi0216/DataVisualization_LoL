@@ -5,6 +5,7 @@ import seaborn as sns
 import os
 from matplotlib.dates import DateFormatter
 import matplotlib.dates as mdates
+from lol_champion_zh_tw import translate_champion
 
 # 設定中文字型
 plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei', 'Arial Unicode MS', 'SimHei']
@@ -19,9 +20,9 @@ def load_champion_data():
     
     df = pd.read_csv(filepath)
     
-    # 確保日期格式正確
+    # 確保日期格式正確，允許混合格式
     if 'date' in df.columns:
-        df['date'] = pd.to_datetime(df['date'])
+        df['date'] = pd.to_datetime(df['date'], format='mixed', errors='coerce')
     
     return df
 
@@ -49,9 +50,11 @@ def analyze_champion_trends_over_time(df, top_champions=8, save_fig=True):
     
     # 找出總選用率最高的N個英雄
     top_champions_list = df['champion'].value_counts().head(top_champions).index.tolist()
+    top_champions_list_zh = [translate_champion(name) for name in top_champions_list]
     
     # 篩選這些英雄的月度資料
     top_monthly_data = monthly_picks[monthly_picks['champion'].isin(top_champions_list)]
+    top_monthly_data['champion_zh'] = top_monthly_data['champion'].apply(translate_champion)
     
     # 將月份轉換回datetime以便繪圖
     top_monthly_data['month_date'] = top_monthly_data['month'].dt.to_timestamp()
@@ -60,15 +63,14 @@ def analyze_champion_trends_over_time(df, top_champions=8, save_fig=True):
     plt.figure(figsize=(14, 8))
     
     # 為每個英雄繪製一條線
-    for champion in top_champions_list:
+    for champion, champion_zh in zip(top_champions_list, top_champions_list_zh):
         champion_data = top_monthly_data[top_monthly_data['champion'] == champion]
         plt.plot(
-            'month_date', 'pick_rate', 
-            data=champion_data, 
+            champion_data['month_date'], champion_data['pick_rate'], 
             marker='o', 
             markersize=5, 
             linewidth=2, 
-            label=champion
+            label=champion_zh
         )
     
     # 設置圖表格式
@@ -117,6 +119,7 @@ def analyze_champion_by_league(df, save_fig=True):
     top_by_league = league_picks.groupby('league').apply(
         lambda x: x.nlargest(5, 'pick_rate')
     ).reset_index(drop=True)
+    top_by_league['champion_zh'] = top_by_league['champion'].apply(translate_champion)
     
     # 視覺化 - 群組條形圖
     plt.figure(figsize=(14, 10))
@@ -128,7 +131,7 @@ def analyze_champion_by_league(df, save_fig=True):
     for i, league in enumerate(major_leagues):
         league_data = top_by_league[top_by_league['league'] == league]
         sns.barplot(
-            x='pick_rate', y='champion', 
+            x='pick_rate', y='champion_zh', 
             data=league_data, 
             palette='viridis', 
             ax=axes[i]

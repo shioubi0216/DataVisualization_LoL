@@ -5,13 +5,20 @@ from dash import dcc, html
 from dash.dependencies import Input, Output
 import plotly.express as px
 import plotly.graph_objects as go
+from lol_champion_zh_tw import translate_champion
 
 # filepath: [interactive_dashboard.py](http://_vscodecontentref_/7)
 # 載入分析資料
+# ...existing code...
 def load_data():
     try:
         champion_data = pd.read_csv("Oracle's_Elixir_data_Processed/champion_analysis_data.csv")
-        champion_data['date'] = pd.to_datetime(champion_data['date'])
+        # 嘗試用 format='mixed' 解析所有格式
+        try:
+            champion_data['date'] = pd.to_datetime(champion_data['date'], format='mixed', errors='coerce')
+        except Exception:
+            # 若 pandas 版本不支援 format='mixed'，則用自動推斷
+            champion_data['date'] = pd.to_datetime(champion_data['date'], errors='coerce')
         return champion_data
     except Exception as e:
         print(f"載入資料時發生錯誤: {e}")
@@ -36,7 +43,7 @@ app.layout = html.Div([
             html.Label("選擇賽區"),
             dcc.Dropdown(
                 id='league-dropdown',
-                options=[{'label': league, 'value': league} for league in sorted(df['league'].unique()) if pd.notna(league)],
+                options=[{'label': league, 'value': league} for league in sorted(df['league'].unique()) if pd.notna(league)] if not df.empty and 'league' in df.columns else [],
                 value=[],
                 multi=True
             ),
@@ -44,18 +51,17 @@ app.layout = html.Div([
             html.Label("選擇年份"),
             dcc.Dropdown(
                 id='year-dropdown',
-                options=[{'label': year, 'value': year} for year in sorted(df['year'].unique()) if pd.notna(year)],
-                value=df['year'].max() if not df.empty else None
+                options=[{'label': year, 'value': year} for year in sorted(df['year'].unique()) if pd.notna(year)] if not df.empty and 'year' in df.columns else [],
+                value=df['year'].max() if not df.empty and 'year' in df.columns else None
             ),
             
             html.Label("選擇位置"),
             dcc.Dropdown(
                 id='position-dropdown',
-                options=[{'label': pos, 'value': pos} for pos in sorted(df['position'].unique()) if pd.notna(pos)],
+                options=[{'label': pos, 'value': pos} for pos in sorted(df['position'].unique()) if pd.notna(pos)] if not df.empty and 'position' in df.columns else [],
                 value=[],
                 multi=True
-            ),
-            
+                ),
         ], style={'width': '20%', 'display': 'inline-block', 'vertical-align': 'top', 'padding': '20px'}),
         
         # 圖表展示區
@@ -112,6 +118,8 @@ def update_pickrate_graph(selected_leagues, selected_year, selected_positions):
     total_games = filtered_df['gameid'].nunique() * 2  # 每場有兩隊
     champion_counts['pick_rate'] = champion_counts['count'] / total_games * 100
     
+    champion_counts['champion_zh'] = champion_counts['champion'].apply(translate_champion)
+    
     # 取前15名
     top_champions = champion_counts.head(15)
     
@@ -119,9 +127,9 @@ def update_pickrate_graph(selected_leagues, selected_year, selected_positions):
     fig = px.bar(
         top_champions,
         x='pick_rate',
-        y='champion',
+        y='champion_zh',
         orientation='h',
-        labels={'pick_rate': '選用率 (%)', 'champion': '英雄'},
+        labels={'pick_rate': '選用率 (%)', 'champion_zh': '英雄'},
         title='英雄選用率 (前15名)',
         height=500
     )
@@ -165,6 +173,8 @@ def update_winrate_graph(selected_leagues, selected_year, selected_positions):
     total_games = filtered_df['gameid'].nunique() * 2  # 每場有兩隊
     champion_stats['pick_rate'] = champion_stats['games'] / total_games * 100
     
+    champion_stats['champion_zh'] = champion_stats['champion'].apply(translate_champion)
+    
     # 篩選出出場次數足夠的英雄 (至少5場)
     champion_stats = champion_stats[champion_stats['games'] >= 5]
     
@@ -174,8 +184,8 @@ def update_winrate_graph(selected_leagues, selected_year, selected_positions):
         x='pick_rate',
         y='winrate',
         size='games',
-        hover_name='champion',
-        labels={'pick_rate': '選用率 (%)', 'winrate': '勝率 (%)', 'games': '出場次數'},
+        hover_name='champion_zh',
+        labels={'pick_rate': '選用率 (%)', 'winrate': '勝率 (%)', 'games': '出場次數', 'champion_zh': '英雄'},
         title='英雄選用率vs勝率',
         height=500
     )
@@ -188,7 +198,7 @@ def update_winrate_graph(selected_leagues, selected_year, selected_positions):
         fig.add_annotation(
             x=row['pick_rate'],
             y=row['winrate'],
-            text=row['champion'],
+            text=row['champion_zh'],
             showarrow=True,
             arrowhead=1
         )
@@ -230,11 +240,13 @@ def update_stats_table(selected_leagues, selected_year, selected_positions):
     champion_stats['winrate'] = (champion_stats['wins'] / champion_stats['games'] * 100).round(2)
     champion_stats['kda'] = ((champion_stats['kills'] + champion_stats['assists']) / champion_stats['deaths'].replace(0, 1)).round(2)
     
+    champion_stats['champion_zh'] = champion_stats['champion'].apply(translate_champion)
+    
     # 排序並取前20名
     champion_stats = champion_stats.sort_values('games', ascending=False).head(20)
     
     # 格式化表格資料
-    formatted_stats = champion_stats[['champion', 'games', 'winrate', 'kills', 'deaths', 'assists', 'kda']]
+    formatted_stats = champion_stats[['champion_zh', 'games', 'winrate', 'kills', 'deaths', 'assists', 'kda']]
     formatted_stats.columns = ['英雄', '出場次數', '勝率(%)', '平均擊殺', '平均死亡', '平均助攻', 'KDA']
     
     # 創建HTML表格
