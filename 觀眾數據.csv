@@ -1,0 +1,4 @@
+date,league,stage,match_id,team1,team2,viewership_peak,viewership_average,duration_minutes,hours_watched,social_engagement_twitter,social_engagement_reddit,social_engagement_youtube,stream_platform,region,tournament_tier,co_streaming_hours,language_breakdown
+2024-11-02,Worlds,Finals,WCS2024_F1,T1,Bilibili Gaming,6856769,1731157,110,190138692,6850000,100000,2450000,Multi-platform,Global,International,87500000,Korean:2M|English:1.69M|Vietnamese:805K
+2024-04-14,LCK,Spring Finals,LCK2024_SF,T1,Gen.G,2656938,354927,277,98137278,2500000,45000,800000,Multi-platform,Korea,Regional,25000000,Korean:2.66M|English:200K
+2024-05-19,MSI,Finals,MSI2024_F,Gen.G,Bilibili Gaming,2829728,1013678,77,78475561,2800000,60000,900000,Multi-platform,Global,International,30000000,Chinese:1.5M|English:800K|Korean:500K
