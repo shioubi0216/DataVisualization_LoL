@@ -11,7 +11,6 @@ import plotly.graph_objects as go
 
 # filepath: [interactive_dashboard.py](http://_vscodecontentref_/7)
 # 載入分析資料
-# ...existing code...
 viewership_analyzer = ViewershipAnalyzer('viewership_market_data.csv')
 
 def load_data():
@@ -35,26 +34,65 @@ df = load_data()
 # 初始化Dash應用
 app = dash.Dash(__name__, title="英雄聯盟電競分析")
 
+# 設定背景圖樣式
+# 使用正確的 assets 路徑，並移除 opacity，改用 CSS 覆蓋層
+background_style = {
+    'className': 'bg-image-container',
+    'style': {'position': 'relative', 'width': '100%', 'height': '100%'}
+}
+
+hero_section_style = {
+    'className': 'bg-image-container',
+    'style': {'position': 'relative', 'width': '100%', 'height': '100%'}
+}
+
+# 圖片對應頁面
+background_images = {
+    'viewership': '/assets/觀看人數分布_背景圖.jpg',
+    'social': '/assets/社交媒體互動熱力圖_背景圖.jpg',
+    'market': '/assets/市場趨勢分析_背景圖.jpg',
+    'audience': '/assets/觀眾偏好分析_背景圖.jpg',
+    'hero': '/assets/英雄分析區域_背景圖.jpg',
+}
+
 # 設計版面配置
 app.layout = html.Div([
     html.H1("英雄聯盟電競資料視覺化", style={'textAlign': 'center'}),
-        # ...existing code...
     html.H2("觀眾與市場分析"),
     dcc.Tabs([
         dcc.Tab(label="觀看人數分布", children=[
-            dcc.Graph(id='viewership-distribution-chart')
+            html.Div([
+                html.Div(className='bg-image', style={'backgroundImage': f"url('{background_images['viewership']}')"}),
+                html.Div([
+                    dcc.Graph(id='viewership-distribution-chart')
+                ], className='content')
+            ], className='bg-image-container', style={'position': 'relative', 'width': '100%', 'height': '100%'})
         ]),
         dcc.Tab(label="社交媒體互動熱力圖", children=[
-            dcc.Graph(id='social-media-heatmap')
+            html.Div([
+                html.Div(className='bg-image', style={'backgroundImage': f"url('{background_images['social']}')"}),
+                html.Div([
+                    dcc.Graph(id='social-media-heatmap')
+                ], className='content')
+            ], className='bg-image-container', style={'position': 'relative', 'width': '100%', 'height': '100%'})
         ]),
         dcc.Tab(label="市場趨勢分析", children=[
-            dcc.Graph(id='market-trend-analysis')
+            html.Div([
+                html.Div(className='bg-image', style={'backgroundImage': f"url('{background_images['market']}')"}),
+                html.Div([
+                    dcc.Graph(id='market-trend-analysis')
+                ], className='content')
+            ], className='bg-image-container', style={'position': 'relative', 'width': '100%', 'height': '100%'})
         ]),
         dcc.Tab(label="觀眾偏好分析", children=[
-            dcc.Graph(id='audience-preference-analysis')
+            html.Div([
+                html.Div(className='bg-image', style={'backgroundImage': f"url('{background_images['audience']}')"}),
+                html.Div([
+                    dcc.Graph(id='audience-preference-analysis')
+                ], className='content')
+            ], className='bg-image-container', style={'position': 'relative', 'width': '100%', 'height': '100%'})
         ]),
     ]),
-    # ...existing code...
     html.Div([
         # 過濾控制區
         html.Div([
@@ -86,15 +124,18 @@ app.layout = html.Div([
         
         # 圖表展示區
         html.Div([
-            html.H3("英雄選用率分析"),
-            
-            dcc.Graph(id='champion-pickrate-graph'),
-            
-            html.H3("英雄勝率分析"),
-            
-            dcc.Graph(id='champion-winrate-graph')
-            
-        ], style={'width': '75%', 'display': 'inline-block', 'padding': '20px'})
+            html.Div(className='bg-image', style={'backgroundImage': f"url('{background_images['hero']}')"}),
+            html.Div([
+                html.H3("英雄選用率分析"),
+                
+                dcc.Graph(id='champion-pickrate-graph'),
+                
+                html.H3("英雄勝率分析"),
+                
+                dcc.Graph(id='champion-winrate-graph')
+                
+            ], className='content')
+        ], style={'width': '75%', 'display': 'inline-block', 'padding': '20px', 'position': 'relative'}, className='bg-image-container'),
         
     ]),
     
@@ -104,8 +145,9 @@ app.layout = html.Div([
         
         html.Div(id='champion-stats-table')
         
-    ], style={'padding': '20px'})
+    ], style={'padding': '20px', 'position': 'relative'}, className='bg-image-container')
 ])
+
 @app.callback(
     Output('viewership-distribution-chart', 'figure'),
     Input('league-dropdown', 'value')  # 可根據需要加更多 Input
@@ -134,6 +176,7 @@ def update_market_trend_analysis(selected_leagues):
 )
 def update_audience_preference_analysis(selected_leagues):
     return viewership_analyzer.create_audience_preference_analysis()
+
 # 定義回調函數 - 選用率圖表
 @app.callback(
     Output('champion-pickrate-graph', 'figure'),
@@ -168,6 +211,7 @@ def update_pickrate_graph(selected_leagues, selected_year, selected_positions):
         )
         fig.update_layout(yaxis={'categoryorder': 'total ascending'})
         return fig
+
 @app.callback(
         Output('champion-winrate-graph', 'figure'),
         [Input('league-dropdown', 'value'),
@@ -213,6 +257,7 @@ def update_winrate_graph(selected_leagues, selected_year, selected_positions):
                 arrowhead=1
             )
         return fig
+
 @app.callback(
         Output('champion-stats-table', 'children'),
         [Input('league-dropdown', 'value'),
